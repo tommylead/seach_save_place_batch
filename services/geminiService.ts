@@ -1,10 +1,16 @@
-// FIX: Implement Gemini API calls following the coding guidelines.
 import { GoogleGenAI, Type } from "@google/genai";
 import { PlaceSuggestion, PlaceDetails } from "../types";
 
-// Note: The API key is sourced from process.env.API_KEY, which is a hard requirement.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai: GoogleGenAI | null = null;
 const model = "gemini-2.5-flash";
+
+export const initializeGemini = (apiKey: string) => {
+    if (!apiKey) {
+        console.error("API key is missing.");
+        throw new Error("API key is required to initialize Gemini service.");
+    }
+    ai = new GoogleGenAI({ apiKey });
+};
 
 const placeSuggestionSchema = {
     type: Type.OBJECT,
@@ -39,13 +45,19 @@ const placeDetailsSchema = {
     required: ["_id", "name", "formatted_address", "types", "summary"],
 };
 
+const checkInitialization = () => {
+    if (!ai) {
+        throw new Error("Gemini service not initialized. Please set the API key first.");
+    }
+};
 
 export const searchPlaces = async (query: string): Promise<PlaceSuggestion[]> => {
+    checkInitialization();
     if (!query.trim()) {
         return [];
     }
     try {
-        const response = await ai.models.generateContent({
+        const response = await ai!.models.generateContent({
             model,
             contents: `Find places matching "${query}". Return a list of relevant suggestions with their Google Places place_id, name, formatted address, and types.`,
             config: {
@@ -60,15 +72,21 @@ export const searchPlaces = async (query: string): Promise<PlaceSuggestion[]> =>
         const jsonString = response.text.trim();
         const results = JSON.parse(jsonString);
         return results as PlaceSuggestion[];
-    } catch (error) {
+    } catch (error)
+    {
         console.error("Error searching places:", error);
-        throw new Error("Failed to fetch place suggestions from Gemini API.");
+        // Check for API key specific errors
+        if (error instanceof Error && error.message.includes('API_KEY_INVALID')) {
+             throw new Error("The provided API key is invalid. Please check and re-enter it.");
+        }
+        throw new Error("Failed to fetch place suggestions. The API key might be invalid or the service is unavailable.");
     }
 };
 
 export const savePlace = async (placeId: string, placeName: string): Promise<PlaceDetails> => {
+    checkInitialization();
     try {
-        const response = await ai.models.generateContent({
+        const response = await ai!.models.generateContent({
             model,
             contents: `Provide detailed information for the place named "${placeName}" with place_id "${placeId}". The response should include the place_id (as _id), name, formatted address, types, and a compelling summary for a tourist.`,
             config: {
@@ -80,7 +98,6 @@ export const savePlace = async (placeId: string, placeName: string): Promise<Pla
         const jsonString = response.text.trim();
         const placeDetails = JSON.parse(jsonString);
 
-        // Ensure the _id from the response matches the requested placeId for data integrity.
         if (placeDetails._id !== placeId) {
              console.warn(`Mismatched place_id. Requested: ${placeId}, Received: ${placeDetails._id}. Overwriting to ensure consistency.`);
              placeDetails._id = placeId;
@@ -89,13 +106,17 @@ export const savePlace = async (placeId: string, placeName: string): Promise<Pla
         return placeDetails as PlaceDetails;
     } catch (error) {
         console.error("Error saving place details:", error);
+        if (error instanceof Error && error.message.includes('API_KEY_INVALID')) {
+             throw new Error("The provided API key is invalid. Please check and re-enter it.");
+        }
         throw new Error("Failed to fetch place details from Gemini API.");
     }
 };
 
 export const refreshPlaceSummary = async (place: PlaceDetails): Promise<PlaceDetails> => {
+    checkInitialization();
     try {
-        const response = await ai.models.generateContent({
+        const response = await ai!.models.generateContent({
             model,
             contents: `Generate a new, fresh, and engaging summary for the following place, suitable for a travel app. Keep it concise. Place name: "${place.name}", Address: "${place.formatted_address}".`,
             config: {
@@ -119,6 +140,9 @@ export const refreshPlaceSummary = async (place: PlaceDetails): Promise<PlaceDet
 
     } catch (error) {
         console.error("Error refreshing place summary:", error);
+         if (error instanceof Error && error.message.includes('API_KEY_INVALID')) {
+             throw new Error("The provided API key is invalid. Please check and re-enter it.");
+        }
         throw new Error("Failed to refresh summary from Gemini API.");
     }
 }

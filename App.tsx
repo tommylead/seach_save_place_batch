@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { PlaceSearch } from './components/PlaceSearch';
 import { SavedPlacesList } from './components/SavedPlacesList';
+import { ApiKeyManager } from './components/ApiKeyManager';
 import { PlaceDetails } from './types';
+import { initializeGemini } from './services/geminiService';
 
 function App() {
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [savedPlaces, setSavedPlaces] = useState<PlaceDetails[]>(() => {
     try {
       const items = window.localStorage.getItem('savedPlaces');
@@ -16,15 +19,35 @@ function App() {
 
   useEffect(() => {
     try {
+      const storedKey = window.localStorage.getItem('geminiApiKey');
+      if (storedKey) {
+        initializeGemini(storedKey);
+        setApiKey(storedKey);
+      }
+    } catch (error) {
+      console.error("Error reading API key from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
       window.localStorage.setItem('savedPlaces', JSON.stringify(savedPlaces));
     } catch (error) {
       console.error("Error writing to localStorage", error);
     }
   }, [savedPlaces]);
 
+  const handleKeySubmit = (key: string) => {
+    try {
+      window.localStorage.setItem('geminiApiKey', key);
+      initializeGemini(key);
+      setApiKey(key);
+    } catch (error) {
+       console.error("Error saving API key to localStorage", error);
+    }
+  };
 
   const handlePlaceSaved = (place: PlaceDetails) => {
-    // Prevent adding duplicates
     if (!savedPlaces.some(p => p._id === place._id)) {
       setSavedPlaces(prevPlaces => [place, ...prevPlaces]);
     }
@@ -39,6 +62,10 @@ function App() {
       prevPlaces.map(p => p._id === updatedPlace._id ? updatedPlace : p)
     );
   };
+
+  if (!apiKey) {
+    return <ApiKeyManager onKeySubmit={handleKeySubmit} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
