@@ -1,0 +1,5 @@
+{
+  "name": "Place Finder & Saver",
+  "description": "An admin tool to search for locations using a Google Maps-like interface and save them. This application uses Gemini to simulate the Google Places API for finding and retrieving location details.",
+  "requestFramePermissions": []
+}
