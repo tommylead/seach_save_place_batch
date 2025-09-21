@@ -7,10 +7,9 @@ interface SavedPlaceItemProps {
   place: PlaceDetails;
   onDeletePlace: (id: string) => void;
   onUpdatePlace: (place: PlaceDetails) => void;
-  apiKey: string;
 }
 
-export const SavedPlaceItem: React.FC<SavedPlaceItemProps> = ({ place, onDeletePlace, onUpdatePlace, apiKey }) => {
+export const SavedPlaceItem: React.FC<SavedPlaceItemProps> = ({ place, onDeletePlace, onUpdatePlace }) => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +17,7 @@ export const SavedPlaceItem: React.FC<SavedPlaceItemProps> = ({ place, onDeleteP
         setIsRefreshing(true);
         setError(null);
         try {
-            const updatedPlace = await refreshPlaceSummary(apiKey, place);
+            const updatedPlace = await refreshPlaceSummary(place);
             onUpdatePlace(updatedPlace);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";

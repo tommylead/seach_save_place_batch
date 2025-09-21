@@ -47,40 +47,12 @@ const placeDetailsSchema = {
     required: ["_id", "name", "formatted_address", "types", "summary", "location"],
 };
 
-export const validateApiKey = async (apiKey: string): Promise<boolean> => {
-    if (!apiKey) return false;
-    try {
-        const ai = new GoogleGenAI({ apiKey });
-        // Make a lightweight, inexpensive call to validate the key
-        const response = await ai.models.generateContent({
-            model,
-            contents: "hi",
-        });
-        
-        // A truly valid key will result in a response with actual text content.
-        // Some invalid keys might not throw an error but will return an empty response.
-        // This check ensures we get a meaningful response.
-        if (response.text && response.text.trim().length > 0) {
-            return true;
-        } else {
-            console.error("API Key validation failed: Model returned no content.");
-            return false;
-        }
-
-    } catch (error) {
-        // This is the expected path for most invalid key errors (e.g., HTTP 400).
-        console.error("API Key validation failed with an error:", error);
-        return false;
-    }
-};
-
-
-export const searchPlaces = async (apiKey: string, query: string): Promise<PlaceSuggestion[]> => {
+export const searchPlaces = async (query: string): Promise<PlaceSuggestion[]> => {
     if (!query.trim()) {
         return [];
     }
     try {
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model,
             contents: `Tìm các địa điểm khớp với "${query}". Trả về danh sách các gợi ý liên quan với place_id, tên, địa chỉ định dạng và các loại hình (types) bằng tiếng Việt.`,
@@ -98,13 +70,13 @@ export const searchPlaces = async (apiKey: string, query: string): Promise<Place
         return results as PlaceSuggestion[];
     } catch (error) {
         console.error("Error searching places:", error);
-        throw new Error("Failed to fetch place suggestions. Check your API key and network connection.");
+        throw new Error("Failed to fetch place suggestions. Please check your network connection.");
     }
 };
 
-export const savePlace = async (apiKey: string, placeId: string, placeName: string): Promise<PlaceDetails> => {
+export const savePlace = async (placeId: string, placeName: string): Promise<PlaceDetails> => {
     try {
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model,
             contents: `Cung cấp thông tin chi tiết cho địa điểm có tên "${placeName}" với place_id "${placeId}". Phản hồi phải bao gồm place_id (dưới dạng _id), tên, địa chỉ định dạng, tọa độ vị trí (vĩ độ, kinh độ), cùng với một bản tóm tắt (summary) và các thẻ (types) hấp dẫn bằng tiếng Việt cho khách du lịch.`,
@@ -126,13 +98,13 @@ export const savePlace = async (apiKey: string, placeId: string, placeName: stri
         return placeDetails as PlaceDetails;
     } catch (error) {
         console.error("Error saving place details:", error);
-        throw new Error("Failed to fetch place details. Check your API key and network connection.");
+        throw new Error("Failed to fetch place details. Please check your network connection.");
     }
 };
 
-export const refreshPlaceSummary = async (apiKey: string, place: PlaceDetails): Promise<PlaceDetails> => {
+export const refreshPlaceSummary = async (place: PlaceDetails): Promise<PlaceDetails> => {
     try {
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model,
             contents: `Tạo một bản tóm tắt mới, hấp dẫn và súc tích bằng tiếng Việt cho địa điểm sau, phù hợp cho một ứng dụng du lịch. Tên địa điểm: "${place.name}", Địa chỉ: "${place.formatted_address}".`,
@@ -157,6 +129,6 @@ export const refreshPlaceSummary = async (apiKey: string, place: PlaceDetails): 
 
     } catch (error) {
         console.error("Error refreshing place summary:", error);
-        throw new Error("Failed to refresh summary. Check your API key and network connection.");
+        throw new Error("Failed to refresh summary. Please check your network connection.");
     }
 }

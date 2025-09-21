@@ -8,10 +8,9 @@ import { Toast } from './Toast';
 
 interface PlaceSearchProps {
   onPlaceSaved: (place: PlaceDetails) => void;
-  apiKey: string;
 }
 
-export const PlaceSearch: React.FC<PlaceSearchProps> = ({ onPlaceSaved, apiKey }) => {
+export const PlaceSearch: React.FC<PlaceSearchProps> = ({ onPlaceSaved }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +34,7 @@ export const PlaceSearch: React.FC<PlaceSearchProps> = ({ onPlaceSaved, apiKey }
     }
     setIsLoading(true);
     try {
-      const results = await searchPlaces(apiKey, searchQuery);
+      const results = await searchPlaces(searchQuery);
       setSuggestions(results);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -44,7 +43,7 @@ export const PlaceSearch: React.FC<PlaceSearchProps> = ({ onPlaceSaved, apiKey }
     } finally {
       setIsLoading(false);
     }
-  }, [apiKey]);
+  }, []);
 
   useEffect(() => {
     fetchSuggestions(debouncedQuery);
@@ -54,7 +53,7 @@ export const PlaceSearch: React.FC<PlaceSearchProps> = ({ onPlaceSaved, apiKey }
   const handleSave = async (place: PlaceSuggestion) => {
     setSavingPlaceId(place.place_id);
     try {
-      const savedDetails = await savePlace(apiKey, place.place_id, place.name);
+      const savedDetails = await savePlace(place.place_id, place.name);
       onPlaceSaved(savedDetails);
       addToast(`'${place.name}' was saved successfully!`, 'success');
       setSuggestions(prev => prev.filter(s => s.place_id !== place.place_id));

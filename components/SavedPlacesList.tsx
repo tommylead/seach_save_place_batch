@@ -6,10 +6,9 @@ interface SavedPlacesListProps {
   places: PlaceDetails[];
   onDeletePlace: (id: string) => void;
   onUpdatePlace: (place: PlaceDetails) => void;
-  apiKey: string;
 }
 
-export const SavedPlacesList: React.FC<SavedPlacesListProps> = ({ places, onDeletePlace, onUpdatePlace, apiKey }) => {
+export const SavedPlacesList: React.FC<SavedPlacesListProps> = ({ places, onDeletePlace, onUpdatePlace }) => {
   const handleExport = () => {
     if (places.length === 0) return;
 
@@ -58,7 +57,6 @@ export const SavedPlacesList: React.FC<SavedPlacesListProps> = ({ places, onDele
               place={place}
               onDeletePlace={onDeletePlace}
               onUpdatePlace={onUpdatePlace}
-              apiKey={apiKey}
             />
           ))}
         </div>

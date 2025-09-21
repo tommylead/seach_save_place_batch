@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PlaceSearch } from './components/PlaceSearch';
 import { SavedPlacesList } from './components/SavedPlacesList';
 import { PlaceDetails } from './types';
-import { ApiKeyModal } from './components/ApiKeyModal';
-import { validateApiKey } from './services/geminiService';
-
-const API_KEY_STORAGE_KEY = 'geminiApiKey';
 
 function App() {
   const [savedPlaces, setSavedPlaces] = useState<PlaceDetails[]>(() => {
@@ -15,15 +11,6 @@ function App() {
     } catch (error) {
       console.error("Error reading from localStorage", error);
       return [];
-    }
-  });
-
-  const [apiKey, setApiKey] = useState<string | null>(() => {
-    try {
-      return window.localStorage.getItem(API_KEY_STORAGE_KEY);
-    } catch (error) {
-      console.error("Error reading API key from localStorage", error);
-      return null;
     }
   });
 
@@ -53,25 +40,6 @@ function App() {
     );
   };
 
-  const handleApiKeySubmit = async (key: string): Promise<boolean> => {
-    const isValid = await validateApiKey(key);
-    if (isValid) {
-      try {
-        window.localStorage.setItem(API_KEY_STORAGE_KEY, key);
-        setApiKey(key);
-        return true;
-      } catch (error) {
-        console.error("Error saving API key to localStorage", error);
-        return false;
-      }
-    }
-    return false;
-  };
-
-  if (!apiKey) {
-    return <ApiKeyModal onKeySubmit={handleApiKeySubmit} />;
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
       <header className="bg-white shadow-md">
@@ -86,14 +54,13 @@ function App() {
       <main className="container mx-auto p-4 md:p-8 flex-grow">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
-            <PlaceSearch onPlaceSaved={handlePlaceSaved} apiKey={apiKey} />
+            <PlaceSearch onPlaceSaved={handlePlaceSaved} />
           </div>
           <div className="md:col-span-2">
             <SavedPlacesList 
               places={savedPlaces} 
               onDeletePlace={handleDeletePlace}
               onUpdatePlace={handleUpdatePlace}
-              apiKey={apiKey}
             />
           </div>
         </div>
