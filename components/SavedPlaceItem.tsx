@@ -7,9 +7,10 @@ interface SavedPlaceItemProps {
   place: PlaceDetails;
   onDeletePlace: (id: string) => void;
   onUpdatePlace: (place: PlaceDetails) => void;
+  apiKey: string;
 }
 
-export const SavedPlaceItem: React.FC<SavedPlaceItemProps> = ({ place, onDeletePlace, onUpdatePlace }) => {
+export const SavedPlaceItem: React.FC<SavedPlaceItemProps> = ({ place, onDeletePlace, onUpdatePlace, apiKey }) => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +18,7 @@ export const SavedPlaceItem: React.FC<SavedPlaceItemProps> = ({ place, onDeleteP
         setIsRefreshing(true);
         setError(null);
         try {
-            const updatedPlace = await refreshPlaceSummary(place);
+            const updatedPlace = await refreshPlaceSummary(apiKey, place);
             onUpdatePlace(updatedPlace);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
@@ -33,6 +34,11 @@ export const SavedPlaceItem: React.FC<SavedPlaceItemProps> = ({ place, onDeleteP
         <div>
           <h3 className="text-xl font-bold text-slate-800">{place.name}</h3>
           <p className="text-sm text-slate-500 mt-1">{place.formatted_address}</p>
+          {place.location && (
+            <p className="text-xs text-slate-400 mt-1" aria-label={`Coordinates: Latitude ${place.location.lat}, Longitude ${place.location.lng}`}>
+              Lat: {place.location.lat.toFixed(6)}, Lng: {place.location.lng.toFixed(6)}
+            </p>
+          )}
         </div>
         <button
           onClick={() => onDeletePlace(place._id)}

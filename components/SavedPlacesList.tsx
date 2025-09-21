@@ -6,12 +6,50 @@ interface SavedPlacesListProps {
   places: PlaceDetails[];
   onDeletePlace: (id: string) => void;
   onUpdatePlace: (place: PlaceDetails) => void;
+  apiKey: string;
 }
 
-export const SavedPlacesList: React.FC<SavedPlacesListProps> = ({ places, onDeletePlace, onUpdatePlace }) => {
+export const SavedPlacesList: React.FC<SavedPlacesListProps> = ({ places, onDeletePlace, onUpdatePlace, apiKey }) => {
+  const handleExport = () => {
+    if (places.length === 0) return;
+
+    const exportData = places.map(place => ({
+      name: place.name,
+      address: place.formatted_address,
+      description: place.summary,
+      tags: place.types,
+      location: place.location || null
+    }));
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'saved_places.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-xl font-semibold mb-4 text-slate-700">Saved Locations</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-slate-700">Saved Locations</h2>
+        {places.length > 0 && (
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors flex items-center"
+            aria-label="Export saved places to a JSON file"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export to JSON
+          </button>
+        )}
+      </div>
       {places.length > 0 ? (
         <div className="space-y-6">
           {places.map((place) => (
@@ -20,6 +58,7 @@ export const SavedPlacesList: React.FC<SavedPlacesListProps> = ({ places, onDele
               place={place}
               onDeletePlace={onDeletePlace}
               onUpdatePlace={onUpdatePlace}
+              apiKey={apiKey}
             />
           ))}
         </div>

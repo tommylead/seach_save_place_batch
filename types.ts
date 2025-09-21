@@ -12,6 +12,10 @@ export interface PlaceDetails {
   formatted_address: string;
   types: string[];
   summary: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface ToastMessage {

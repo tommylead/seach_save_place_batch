@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { PlaceSearch } from './components/PlaceSearch';
 import { SavedPlacesList } from './components/SavedPlacesList';
-import { ApiKeyManager } from './components/ApiKeyManager';
 import { PlaceDetails } from './types';
-import { initializeGemini } from './services/geminiService';
+import { ApiKeyModal } from './components/ApiKeyModal';
+import { validateApiKey } from './services/geminiService';
+
+const API_KEY_STORAGE_KEY = 'geminiApiKey';
 
 function App() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
   const [savedPlaces, setSavedPlaces] = useState<PlaceDetails[]>(() => {
     try {
       const items = window.localStorage.getItem('savedPlaces');
@@ -17,17 +18,14 @@ function App() {
     }
   });
 
-  useEffect(() => {
+  const [apiKey, setApiKey] = useState<string | null>(() => {
     try {
-      const storedKey = window.localStorage.getItem('geminiApiKey');
-      if (storedKey) {
-        initializeGemini(storedKey);
-        setApiKey(storedKey);
-      }
+      return window.localStorage.getItem(API_KEY_STORAGE_KEY);
     } catch (error) {
       console.error("Error reading API key from localStorage", error);
+      return null;
     }
-  }, []);
+  });
 
   useEffect(() => {
     try {
@@ -37,17 +35,9 @@ function App() {
     }
   }, [savedPlaces]);
 
-  const handleKeySubmit = (key: string) => {
-    try {
-      window.localStorage.setItem('geminiApiKey', key);
-      initializeGemini(key);
-      setApiKey(key);
-    } catch (error) {
-       console.error("Error saving API key to localStorage", error);
-    }
-  };
 
   const handlePlaceSaved = (place: PlaceDetails) => {
+    // Prevent adding duplicates
     if (!savedPlaces.some(p => p._id === place._id)) {
       setSavedPlaces(prevPlaces => [place, ...prevPlaces]);
     }
@@ -63,8 +53,23 @@ function App() {
     );
   };
 
+  const handleApiKeySubmit = async (key: string): Promise<boolean> => {
+    const isValid = await validateApiKey(key);
+    if (isValid) {
+      try {
+        window.localStorage.setItem(API_KEY_STORAGE_KEY, key);
+        setApiKey(key);
+        return true;
+      } catch (error) {
+        console.error("Error saving API key to localStorage", error);
+        return false;
+      }
+    }
+    return false;
+  };
+
   if (!apiKey) {
-    return <ApiKeyManager onKeySubmit={handleKeySubmit} />;
+    return <ApiKeyModal onKeySubmit={handleApiKeySubmit} />;
   }
 
   return (
@@ -81,13 +86,14 @@ function App() {
       <main className="container mx-auto p-4 md:p-8 flex-grow">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
-            <PlaceSearch onPlaceSaved={handlePlaceSaved} />
+            <PlaceSearch onPlaceSaved={handlePlaceSaved} apiKey={apiKey} />
           </div>
           <div className="md:col-span-2">
             <SavedPlacesList 
               places={savedPlaces} 
               onDeletePlace={handleDeletePlace}
               onUpdatePlace={handleUpdatePlace}
+              apiKey={apiKey}
             />
           </div>
         </div>
